@@ -26,11 +26,9 @@ st.set_page_config(
 #  CONSTANTS & SECRETS
 # ------------------------------------------------------------------
 # HARDCODED API KEY (As requested)
-# WARNING: In a public GitHub repo, this key will be visible to everyone.
 DEFAULT_API_KEY = "AIzaSyAxlBTz4UdrOXaHmTqLRjKjHhdg2D4J_lk" 
 
-# Your deployed app URL (Auto-fill for sharing links)
-# NOTE: If you redeploy your app, this URL will change. Update it in the Teacher Dashboard.
+# Your deployed app URL
 DEFAULT_APP_URL = "https://exam-platform-hpzbdqrrr5rx3qyg6nyhjp.streamlit.app"
 
 # DB File for Users (Local JSON storage)
@@ -109,7 +107,6 @@ def decode_and_decompress(encoded_str):
         decompressed_data = zlib.decompress(decoded_data)
         return json.loads(decompressed_data.decode('utf-8'))
     except Exception:
-        # Fallback for old links
         try:
             decoded_bytes = base64.b64decode(encoded_str)
             return json.loads(decoded_bytes.decode('utf-8'))
@@ -174,8 +171,6 @@ def split_and_upload_pdf(uploaded_file, api_key, chunk_size=10):
             with open(chunk_filename, "wb") as f:
                 chunk_writer.write(f)
             
-            # Optimized: Just extract text for chunks to save API calls/Time if needed, 
-            # OR use File API. Let's stick to File API as requested for accuracy.
             g_file = upload_to_gemini(chunk_filename, "application/pdf", api_key)
             if g_file: gemini_files.append(g_file)
 
@@ -271,7 +266,6 @@ def add_more_questions(current_exam, content_parts, api_key, q_type):
 def teacher_dashboard(api_key):
     st.title(f"👨‍🏫 Teacher Dashboard - Welcome {st.session_state['user_info']['name']}")
     
-    # Logout Button in Header
     if st.button("Logout", key="t_logout"):
         st.session_state['logged_in'] = False
         st.session_state['user_info'] = None
@@ -325,10 +319,8 @@ def teacher_dashboard(api_key):
             st.success("✅ Exam Published!")
             st.subheader("🔗 Share Exam")
             
-            # --- UPDATED: Uses your specific App URL ---
-            base_url = st.text_input("App URL (Copy from browser address bar):", value=DEFAULT_APP_URL)
-            if base_url != DEFAULT_APP_URL:
-                 st.caption(f"Using custom URL: {base_url}")
+            base_url = st.text_input("App URL:", value=DEFAULT_APP_URL)
+            if base_url.endswith("/"): base_url = base_url[:-1] # Cleanup slash
             
             encoded_id = urllib.parse.quote(st.session_state.exam_link)
             full_link = f"{base_url}/?exam_id={encoded_id}"
@@ -346,7 +338,6 @@ def student_view(auto_exam_id=None):
         st.session_state['user_info'] = None
         st.rerun()
 
-    # If ID came from URL (pending) or manual input
     if auto_exam_id:
         exam_id = auto_exam_id
     else:
@@ -386,7 +377,6 @@ def student_view(auto_exam_id=None):
                 submitted = st.form_submit_button("Submit Exam")
                 
                 if submitted:
-                    # Calculate MCQ score
                     for i, q in enumerate(exam_data['mcqs']):
                         if answers.get(f"m_{i}") == q.get('correct'): score += q['marks']
                     
@@ -404,7 +394,6 @@ def student_view(auto_exam_id=None):
 def login_page():
     st.title("🔐 Exam Platform Login")
     
-    # Check if a student clicked a link and was redirected here
     if 'pending_exam_id' in st.session_state and st.session_state['pending_exam_id']:
         st.info("Please Log In or Sign Up to access your Exam.")
 
@@ -424,7 +413,6 @@ def login_page():
             else:
                 st.error("Invalid email or password")
         
-        # Forgot Password Section
         with st.expander("Forgot Password?"):
             st.write("Create a new password.")
             fp_email = st.text_input("Enter your Email", key="fp_email")
@@ -460,7 +448,6 @@ def login_page():
 # MAIN APP LOGIC
 # ==========================================
 
-# Initialize Session State
 if 'logged_in' not in st.session_state: st.session_state['logged_in'] = False
 if 'user_info' not in st.session_state: st.session_state['user_info'] = None
 if 'exam_data' not in st.session_state: st.session_state.exam_data = None
@@ -470,6 +457,7 @@ if 'pending_exam_id' not in st.session_state: st.session_state['pending_exam_id'
 
 def main():
     # 1. Capture Exam ID from URL (if any)
+    # Streamlit 1.30+ uses st.query_params which behaves like a dict
     query_params = st.query_params
     if "exam_id" in query_params:
         st.session_state['pending_exam_id'] = query_params["exam_id"]
@@ -482,13 +470,8 @@ def main():
         user_role = st.session_state['user_info']['role']
         
         if user_role == "Teacher":
-            # Teachers see Dashboard
-            # Note: We pass the hardcoded KEY directly
             teacher_dashboard(DEFAULT_API_KEY)
-        
         elif user_role == "Student":
-            # Students see Exam View
-            # If there was a pending link, use it, then clear it
             exam_id_to_load = st.session_state['pending_exam_id']
             student_view(exam_id_to_load)
 
