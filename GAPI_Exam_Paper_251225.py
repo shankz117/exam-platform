@@ -26,7 +26,7 @@ st.set_page_config(
 #  CONSTANTS & SECRETS
 # ------------------------------------------------------------------
 # HARDCODED API KEY (As requested)
-DEFAULT_API_KEY = "AIzaSyAxlBTz4UdrOXaHmTqLRjKjHhdg2D4J_lk" 
+DEFAULT_API_KEY = "AIzaSyDP6j54GONoTihGlKPa-olFMn5IRuUVrKY" 
 
 # Your deployed app URL
 DEFAULT_APP_URL = "https://exam-platform-hpzbdqrrr5rx3qyg6nyhjp.streamlit.app"
